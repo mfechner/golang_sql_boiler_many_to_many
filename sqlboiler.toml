@@ -1,0 +1,17 @@
+output = "internal/db/models"
+wipe = true
+no-tests = false
+add-enum-types = true
+
+[mysql]
+  dbname = "govimbadmin"
+  host = "localhost"
+  port = 3306
+  user = "root"
+  pass = ""
+  sslmode = "PREFERRED"
+  blacklist = ["schema_migrations"]
+
+[auto-columns]
+  created = "created"
+  updated = "modified"
