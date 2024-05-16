@@ -232,14 +232,17 @@ var DomainWhere = struct {
 
 // DomainRels is where relationship names are stored.
 var DomainRels = struct {
-	AdminAdmins string
+	Admins          string
+	DomainMailboxes string
 }{
-	AdminAdmins: "AdminAdmins",
+	Admins:          "Admins",
+	DomainMailboxes: "DomainMailboxes",
 }
 
 // domainR is where relationships are stored.
 type domainR struct {
-	AdminAdmins AdminSlice `boil:"AdminAdmins" json:"AdminAdmins" toml:"AdminAdmins" yaml:"AdminAdmins"`
+	Admins          AdminSlice   `boil:"Admins" json:"Admins" toml:"Admins" yaml:"Admins"`
+	DomainMailboxes MailboxSlice `boil:"DomainMailboxes" json:"DomainMailboxes" toml:"DomainMailboxes" yaml:"DomainMailboxes"`
 }
 
 // NewStruct creates a new relationship struct
@@ -247,11 +250,18 @@ func (*domainR) NewStruct() *domainR {
 	return &domainR{}
 }
 
-func (r *domainR) GetAdminAdmins() AdminSlice {
+func (r *domainR) GetAdmins() AdminSlice {
 	if r == nil {
 		return nil
 	}
-	return r.AdminAdmins
+	return r.Admins
+}
+
+func (r *domainR) GetDomainMailboxes() MailboxSlice {
+	if r == nil {
+		return nil
+	}
+	return r.DomainMailboxes
 }
 
 // domainL is where Load methods for each relationship are stored.
@@ -570,8 +580,8 @@ func (q domainQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (boo
 	return count > 0, nil
 }
 
-// AdminAdmins retrieves all the admin's Admins with an executor via id column.
-func (o *Domain) AdminAdmins(mods ...qm.QueryMod) adminQuery {
+// Admins retrieves all the admin's Admins with an executor.
+func (o *Domain) Admins(mods ...qm.QueryMod) adminQuery {
 	var queryMods []qm.QueryMod
 	if len(mods) != 0 {
 		queryMods = append(queryMods, mods...)
@@ -585,9 +595,23 @@ func (o *Domain) AdminAdmins(mods ...qm.QueryMod) adminQuery {
 	return Admins(queryMods...)
 }
 
-// LoadAdminAdmins allows an eager lookup of values, cached into the
+// DomainMailboxes retrieves all the mailbox's Mailboxes with an executor via Domain_id column.
+func (o *Domain) DomainMailboxes(mods ...qm.QueryMod) mailboxQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("`mailbox`.`Domain_id`=?", o.ID),
+	)
+
+	return Mailboxes(queryMods...)
+}
+
+// LoadAdmins allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-M or N-M relationship.
-func (domainL) LoadAdminAdmins(ctx context.Context, e boil.ContextExecutor, singular bool, maybeDomain interface{}, mods queries.Applicator) error {
+func (domainL) LoadAdmins(ctx context.Context, e boil.ContextExecutor, singular bool, maybeDomain interface{}, mods queries.Applicator) error {
 	var slice []*Domain
 	var object *Domain
 
@@ -688,12 +712,12 @@ func (domainL) LoadAdminAdmins(ctx context.Context, e boil.ContextExecutor, sing
 		}
 	}
 	if singular {
-		object.R.AdminAdmins = resultSlice
+		object.R.Admins = resultSlice
 		for _, foreign := range resultSlice {
 			if foreign.R == nil {
 				foreign.R = &adminR{}
 			}
-			foreign.R.DomainDomains = append(foreign.R.DomainDomains, object)
+			foreign.R.Domains = append(foreign.R.Domains, object)
 		}
 		return nil
 	}
@@ -702,11 +726,11 @@ func (domainL) LoadAdminAdmins(ctx context.Context, e boil.ContextExecutor, sing
 		localJoinCol := localJoinCols[i]
 		for _, local := range slice {
 			if local.ID == localJoinCol {
-				local.R.AdminAdmins = append(local.R.AdminAdmins, foreign)
+				local.R.Admins = append(local.R.Admins, foreign)
 				if foreign.R == nil {
 					foreign.R = &adminR{}
 				}
-				foreign.R.DomainDomains = append(foreign.R.DomainDomains, local)
+				foreign.R.Domains = append(foreign.R.Domains, local)
 				break
 			}
 		}
@@ -715,11 +739,124 @@ func (domainL) LoadAdminAdmins(ctx context.Context, e boil.ContextExecutor, sing
 	return nil
 }
 
-// AddAdminAdmins adds the given related objects to the existing relationships
+// LoadDomainMailboxes allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (domainL) LoadDomainMailboxes(ctx context.Context, e boil.ContextExecutor, singular bool, maybeDomain interface{}, mods queries.Applicator) error {
+	var slice []*Domain
+	var object *Domain
+
+	if singular {
+		var ok bool
+		object, ok = maybeDomain.(*Domain)
+		if !ok {
+			object = new(Domain)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeDomain)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeDomain))
+			}
+		}
+	} else {
+		s, ok := maybeDomain.(*[]*Domain)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeDomain)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeDomain))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &domainR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &domainR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`mailbox`),
+		qm.WhereIn(`mailbox.Domain_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load mailbox")
+	}
+
+	var resultSlice []*Mailbox
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice mailbox")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on mailbox")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for mailbox")
+	}
+
+	if len(mailboxAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.DomainMailboxes = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &mailboxR{}
+			}
+			foreign.R.Domain = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.DomainID) {
+				local.R.DomainMailboxes = append(local.R.DomainMailboxes, foreign)
+				if foreign.R == nil {
+					foreign.R = &mailboxR{}
+				}
+				foreign.R.Domain = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// AddAdmins adds the given related objects to the existing relationships
 // of the domain, optionally inserting them as new records.
-// Appends related to o.R.AdminAdmins.
-// Sets related.R.DomainDomains appropriately.
-func (o *Domain) AddAdminAdmins(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Admin) error {
+// Appends related to o.R.Admins.
+// Sets related.R.Domains appropriately.
+func (o *Domain) AddAdmins(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Admin) error {
 	var err error
 	for _, rel := range related {
 		if insert {
@@ -745,31 +882,31 @@ func (o *Domain) AddAdminAdmins(ctx context.Context, exec boil.ContextExecutor, 
 	}
 	if o.R == nil {
 		o.R = &domainR{
-			AdminAdmins: related,
+			Admins: related,
 		}
 	} else {
-		o.R.AdminAdmins = append(o.R.AdminAdmins, related...)
+		o.R.Admins = append(o.R.Admins, related...)
 	}
 
 	for _, rel := range related {
 		if rel.R == nil {
 			rel.R = &adminR{
-				DomainDomains: DomainSlice{o},
+				Domains: DomainSlice{o},
 			}
 		} else {
-			rel.R.DomainDomains = append(rel.R.DomainDomains, o)
+			rel.R.Domains = append(rel.R.Domains, o)
 		}
 	}
 	return nil
 }
 
-// SetAdminAdmins removes all previously related items of the
+// SetAdmins removes all previously related items of the
 // domain replacing them completely with the passed
 // in related items, optionally inserting them as new records.
-// Sets o.R.DomainDomains's AdminAdmins accordingly.
-// Replaces o.R.AdminAdmins with related.
-// Sets related.R.DomainDomains's AdminAdmins accordingly.
-func (o *Domain) SetAdminAdmins(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Admin) error {
+// Sets o.R.Domains's Admins accordingly.
+// Replaces o.R.Admins with related.
+// Sets related.R.Domains's Admins accordingly.
+func (o *Domain) SetAdmins(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Admin) error {
 	query := "delete from `domain_admins` where `Domain_id` = ?"
 	values := []interface{}{o.ID}
 	if boil.IsDebug(ctx) {
@@ -782,18 +919,18 @@ func (o *Domain) SetAdminAdmins(ctx context.Context, exec boil.ContextExecutor, 
 		return errors.Wrap(err, "failed to remove relationships before set")
 	}
 
-	removeAdminAdminsFromDomainDomainsSlice(o, related)
+	removeAdminsFromDomainsSlice(o, related)
 	if o.R != nil {
-		o.R.AdminAdmins = nil
+		o.R.Admins = nil
 	}
 
-	return o.AddAdminAdmins(ctx, exec, insert, related...)
+	return o.AddAdmins(ctx, exec, insert, related...)
 }
 
-// RemoveAdminAdmins relationships from objects passed in.
-// Removes related items from R.AdminAdmins (uses pointer comparison, removal does not keep order)
-// Sets related.R.DomainDomains.
-func (o *Domain) RemoveAdminAdmins(ctx context.Context, exec boil.ContextExecutor, related ...*Admin) error {
+// RemoveAdmins relationships from objects passed in.
+// Removes related items from R.Admins (uses pointer comparison, removal does not keep order)
+// Sets related.R.Domains.
+func (o *Domain) RemoveAdmins(ctx context.Context, exec boil.ContextExecutor, related ...*Admin) error {
 	if len(related) == 0 {
 		return nil
 	}
@@ -817,22 +954,22 @@ func (o *Domain) RemoveAdminAdmins(ctx context.Context, exec boil.ContextExecuto
 	if err != nil {
 		return errors.Wrap(err, "failed to remove relationships before set")
 	}
-	removeAdminAdminsFromDomainDomainsSlice(o, related)
+	removeAdminsFromDomainsSlice(o, related)
 	if o.R == nil {
 		return nil
 	}
 
 	for _, rel := range related {
-		for i, ri := range o.R.AdminAdmins {
+		for i, ri := range o.R.Admins {
 			if rel != ri {
 				continue
 			}
 
-			ln := len(o.R.AdminAdmins)
+			ln := len(o.R.Admins)
 			if ln > 1 && i < ln-1 {
-				o.R.AdminAdmins[i] = o.R.AdminAdmins[ln-1]
+				o.R.Admins[i] = o.R.Admins[ln-1]
 			}
-			o.R.AdminAdmins = o.R.AdminAdmins[:ln-1]
+			o.R.Admins = o.R.Admins[:ln-1]
 			break
 		}
 	}
@@ -840,24 +977,151 @@ func (o *Domain) RemoveAdminAdmins(ctx context.Context, exec boil.ContextExecuto
 	return nil
 }
 
-func removeAdminAdminsFromDomainDomainsSlice(o *Domain, related []*Admin) {
+func removeAdminsFromDomainsSlice(o *Domain, related []*Admin) {
 	for _, rel := range related {
 		if rel.R == nil {
 			continue
 		}
-		for i, ri := range rel.R.DomainDomains {
+		for i, ri := range rel.R.Domains {
 			if o.ID != ri.ID {
 				continue
 			}
 
-			ln := len(rel.R.DomainDomains)
+			ln := len(rel.R.Domains)
 			if ln > 1 && i < ln-1 {
-				rel.R.DomainDomains[i] = rel.R.DomainDomains[ln-1]
+				rel.R.Domains[i] = rel.R.Domains[ln-1]
 			}
-			rel.R.DomainDomains = rel.R.DomainDomains[:ln-1]
+			rel.R.Domains = rel.R.Domains[:ln-1]
 			break
 		}
 	}
+}
+
+// AddDomainMailboxes adds the given related objects to the existing relationships
+// of the domain, optionally inserting them as new records.
+// Appends related to o.R.DomainMailboxes.
+// Sets related.R.Domain appropriately.
+func (o *Domain) AddDomainMailboxes(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Mailbox) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.DomainID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE `mailbox` SET %s WHERE %s",
+				strmangle.SetParamNames("`", "`", 0, []string{"Domain_id"}),
+				strmangle.WhereClause("`", "`", 0, mailboxPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.DomainID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &domainR{
+			DomainMailboxes: related,
+		}
+	} else {
+		o.R.DomainMailboxes = append(o.R.DomainMailboxes, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &mailboxR{
+				Domain: o,
+			}
+		} else {
+			rel.R.Domain = o
+		}
+	}
+	return nil
+}
+
+// SetDomainMailboxes removes all previously related items of the
+// domain replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.Domain's DomainMailboxes accordingly.
+// Replaces o.R.DomainMailboxes with related.
+// Sets related.R.Domain's DomainMailboxes accordingly.
+func (o *Domain) SetDomainMailboxes(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Mailbox) error {
+	query := "update `mailbox` set `Domain_id` = null where `Domain_id` = ?"
+	values := []interface{}{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.DomainMailboxes {
+			queries.SetScanner(&rel.DomainID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.Domain = nil
+		}
+		o.R.DomainMailboxes = nil
+	}
+
+	return o.AddDomainMailboxes(ctx, exec, insert, related...)
+}
+
+// RemoveDomainMailboxes relationships from objects passed in.
+// Removes related items from R.DomainMailboxes (uses pointer comparison, removal does not keep order)
+// Sets related.R.Domain.
+func (o *Domain) RemoveDomainMailboxes(ctx context.Context, exec boil.ContextExecutor, related ...*Mailbox) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.DomainID, nil)
+		if rel.R != nil {
+			rel.R.Domain = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("Domain_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.DomainMailboxes {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.DomainMailboxes)
+			if ln > 1 && i < ln-1 {
+				o.R.DomainMailboxes[i] = o.R.DomainMailboxes[ln-1]
+			}
+			o.R.DomainMailboxes = o.R.DomainMailboxes[:ln-1]
+			break
+		}
+	}
+
+	return nil
 }
 
 // Domains retrieves all the records using an executor.

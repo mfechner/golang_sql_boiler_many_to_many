@@ -14,56 +14,67 @@ import "testing"
 func TestParent(t *testing.T) {
 	t.Run("Admins", testAdmins)
 	t.Run("Domains", testDomains)
+	t.Run("Mailboxes", testMailboxes)
 }
 
 func TestDelete(t *testing.T) {
 	t.Run("Admins", testAdminsDelete)
 	t.Run("Domains", testDomainsDelete)
+	t.Run("Mailboxes", testMailboxesDelete)
 }
 
 func TestQueryDeleteAll(t *testing.T) {
 	t.Run("Admins", testAdminsQueryDeleteAll)
 	t.Run("Domains", testDomainsQueryDeleteAll)
+	t.Run("Mailboxes", testMailboxesQueryDeleteAll)
 }
 
 func TestSliceDeleteAll(t *testing.T) {
 	t.Run("Admins", testAdminsSliceDeleteAll)
 	t.Run("Domains", testDomainsSliceDeleteAll)
+	t.Run("Mailboxes", testMailboxesSliceDeleteAll)
 }
 
 func TestExists(t *testing.T) {
 	t.Run("Admins", testAdminsExists)
 	t.Run("Domains", testDomainsExists)
+	t.Run("Mailboxes", testMailboxesExists)
 }
 
 func TestFind(t *testing.T) {
 	t.Run("Admins", testAdminsFind)
 	t.Run("Domains", testDomainsFind)
+	t.Run("Mailboxes", testMailboxesFind)
 }
 
 func TestBind(t *testing.T) {
 	t.Run("Admins", testAdminsBind)
 	t.Run("Domains", testDomainsBind)
+	t.Run("Mailboxes", testMailboxesBind)
 }
 
 func TestOne(t *testing.T) {
 	t.Run("Admins", testAdminsOne)
 	t.Run("Domains", testDomainsOne)
+	t.Run("Mailboxes", testMailboxesOne)
 }
 
 func TestAll(t *testing.T) {
 	t.Run("Admins", testAdminsAll)
 	t.Run("Domains", testDomainsAll)
+	t.Run("Mailboxes", testMailboxesAll)
 }
 
 func TestCount(t *testing.T) {
 	t.Run("Admins", testAdminsCount)
 	t.Run("Domains", testDomainsCount)
+	t.Run("Mailboxes", testMailboxesCount)
 }
 
 func TestHooks(t *testing.T) {
 	t.Run("Admins", testAdminsHooks)
 	t.Run("Domains", testDomainsHooks)
+	t.Run("Mailboxes", testMailboxesHooks)
 }
 
 func TestInsert(t *testing.T) {
@@ -71,29 +82,36 @@ func TestInsert(t *testing.T) {
 	t.Run("Admins", testAdminsInsertWhitelist)
 	t.Run("Domains", testDomainsInsert)
 	t.Run("Domains", testDomainsInsertWhitelist)
+	t.Run("Mailboxes", testMailboxesInsert)
+	t.Run("Mailboxes", testMailboxesInsertWhitelist)
 }
 
 func TestReload(t *testing.T) {
 	t.Run("Admins", testAdminsReload)
 	t.Run("Domains", testDomainsReload)
+	t.Run("Mailboxes", testMailboxesReload)
 }
 
 func TestReloadAll(t *testing.T) {
 	t.Run("Admins", testAdminsReloadAll)
 	t.Run("Domains", testDomainsReloadAll)
+	t.Run("Mailboxes", testMailboxesReloadAll)
 }
 
 func TestSelect(t *testing.T) {
 	t.Run("Admins", testAdminsSelect)
 	t.Run("Domains", testDomainsSelect)
+	t.Run("Mailboxes", testMailboxesSelect)
 }
 
 func TestUpdate(t *testing.T) {
 	t.Run("Admins", testAdminsUpdate)
 	t.Run("Domains", testDomainsUpdate)
+	t.Run("Mailboxes", testMailboxesUpdate)
 }
 
 func TestSliceUpdateAll(t *testing.T) {
 	t.Run("Admins", testAdminsSliceUpdateAll)
 	t.Run("Domains", testDomainsSliceUpdateAll)
+	t.Run("Mailboxes", testMailboxesSliceUpdateAll)
 }

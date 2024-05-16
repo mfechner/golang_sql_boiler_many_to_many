@@ -494,7 +494,7 @@ func testDomainsInsertWhitelist(t *testing.T) {
 	}
 }
 
-func testDomainToManyAdminAdmins(t *testing.T) {
+func testDomainToManyAdmins(t *testing.T) {
 	var err error
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
@@ -535,7 +535,7 @@ func testDomainToManyAdminAdmins(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	check, err := a.AdminAdmins().All(ctx, tx)
+	check, err := a.Admins().All(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -558,18 +558,18 @@ func testDomainToManyAdminAdmins(t *testing.T) {
 	}
 
 	slice := DomainSlice{&a}
-	if err = a.L.LoadAdminAdmins(ctx, tx, false, (*[]*Domain)(&slice), nil); err != nil {
+	if err = a.L.LoadAdmins(ctx, tx, false, (*[]*Domain)(&slice), nil); err != nil {
 		t.Fatal(err)
 	}
-	if got := len(a.R.AdminAdmins); got != 2 {
+	if got := len(a.R.Admins); got != 2 {
 		t.Error("number of eager loaded records wrong, got:", got)
 	}
 
-	a.R.AdminAdmins = nil
-	if err = a.L.LoadAdminAdmins(ctx, tx, true, &a, nil); err != nil {
+	a.R.Admins = nil
+	if err = a.L.LoadAdmins(ctx, tx, true, &a, nil); err != nil {
 		t.Fatal(err)
 	}
-	if got := len(a.R.AdminAdmins); got != 2 {
+	if got := len(a.R.Admins); got != 2 {
 		t.Error("number of eager loaded records wrong, got:", got)
 	}
 
@@ -578,7 +578,84 @@ func testDomainToManyAdminAdmins(t *testing.T) {
 	}
 }
 
-func testDomainToManyAddOpAdminAdmins(t *testing.T) {
+func testDomainToManyDomainMailboxes(t *testing.T) {
+	var err error
+	ctx := context.Background()
+	tx := MustTx(boil.BeginTx(ctx, nil))
+	defer func() { _ = tx.Rollback() }()
+
+	var a Domain
+	var b, c Mailbox
+
+	seed := randomize.NewSeed()
+	if err = randomize.Struct(seed, &a, domainDBTypes, true, domainColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Domain struct: %s", err)
+	}
+
+	if err := a.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	if err = randomize.Struct(seed, &b, mailboxDBTypes, false, mailboxColumnsWithDefault...); err != nil {
+		t.Fatal(err)
+	}
+	if err = randomize.Struct(seed, &c, mailboxDBTypes, false, mailboxColumnsWithDefault...); err != nil {
+		t.Fatal(err)
+	}
+
+	queries.Assign(&b.DomainID, a.ID)
+	queries.Assign(&c.DomainID, a.ID)
+	if err = b.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+	if err = c.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	check, err := a.DomainMailboxes().All(ctx, tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	bFound, cFound := false, false
+	for _, v := range check {
+		if queries.Equal(v.DomainID, b.DomainID) {
+			bFound = true
+		}
+		if queries.Equal(v.DomainID, c.DomainID) {
+			cFound = true
+		}
+	}
+
+	if !bFound {
+		t.Error("expected to find b")
+	}
+	if !cFound {
+		t.Error("expected to find c")
+	}
+
+	slice := DomainSlice{&a}
+	if err = a.L.LoadDomainMailboxes(ctx, tx, false, (*[]*Domain)(&slice), nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(a.R.DomainMailboxes); got != 2 {
+		t.Error("number of eager loaded records wrong, got:", got)
+	}
+
+	a.R.DomainMailboxes = nil
+	if err = a.L.LoadDomainMailboxes(ctx, tx, true, &a, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(a.R.DomainMailboxes); got != 2 {
+		t.Error("number of eager loaded records wrong, got:", got)
+	}
+
+	if t.Failed() {
+		t.Logf("%#v", check)
+	}
+}
+
+func testDomainToManyAddOpAdmins(t *testing.T) {
 	var err error
 
 	ctx := context.Background()
@@ -615,7 +692,7 @@ func testDomainToManyAddOpAdminAdmins(t *testing.T) {
 	}
 
 	for i, x := range foreignersSplitByInsertion {
-		err = a.AddAdminAdmins(ctx, tx, i != 0, x...)
+		err = a.AddAdmins(ctx, tx, i != 0, x...)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -623,21 +700,21 @@ func testDomainToManyAddOpAdminAdmins(t *testing.T) {
 		first := x[0]
 		second := x[1]
 
-		if first.R.DomainDomains[0] != &a {
+		if first.R.Domains[0] != &a {
 			t.Error("relationship was not added properly to the slice")
 		}
-		if second.R.DomainDomains[0] != &a {
+		if second.R.Domains[0] != &a {
 			t.Error("relationship was not added properly to the slice")
 		}
 
-		if a.R.AdminAdmins[i*2] != first {
+		if a.R.Admins[i*2] != first {
 			t.Error("relationship struct slice not set to correct value")
 		}
-		if a.R.AdminAdmins[i*2+1] != second {
+		if a.R.Admins[i*2+1] != second {
 			t.Error("relationship struct slice not set to correct value")
 		}
 
-		count, err := a.AdminAdmins().Count(ctx, tx)
+		count, err := a.Admins().Count(ctx, tx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -647,7 +724,7 @@ func testDomainToManyAddOpAdminAdmins(t *testing.T) {
 	}
 }
 
-func testDomainToManySetOpAdminAdmins(t *testing.T) {
+func testDomainToManySetOpAdmins(t *testing.T) {
 	var err error
 
 	ctx := context.Background()
@@ -678,12 +755,12 @@ func testDomainToManySetOpAdminAdmins(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = a.SetAdminAdmins(ctx, tx, false, &b, &c)
+	err = a.SetAdmins(ctx, tx, false, &b, &c)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	count, err := a.AdminAdmins().Count(ctx, tx)
+	count, err := a.Admins().Count(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -691,12 +768,12 @@ func testDomainToManySetOpAdminAdmins(t *testing.T) {
 		t.Error("count was wrong:", count)
 	}
 
-	err = a.SetAdminAdmins(ctx, tx, true, &d, &e)
+	err = a.SetAdmins(ctx, tx, true, &d, &e)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	count, err = a.AdminAdmins().Count(ctx, tx)
+	count, err = a.Admins().Count(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -708,28 +785,28 @@ func testDomainToManySetOpAdminAdmins(t *testing.T) {
 	// to these when we call Set(). Leaving them here as wishful thinking
 	// and to let people know there's dragons.
 	//
-	// if len(b.R.DomainDomains) != 0 {
+	// if len(b.R.Domains) != 0 {
 	// 	t.Error("relationship was not removed properly from the slice")
 	// }
-	// if len(c.R.DomainDomains) != 0 {
+	// if len(c.R.Domains) != 0 {
 	// 	t.Error("relationship was not removed properly from the slice")
 	// }
-	if d.R.DomainDomains[0] != &a {
+	if d.R.Domains[0] != &a {
 		t.Error("relationship was not added properly to the slice")
 	}
-	if e.R.DomainDomains[0] != &a {
+	if e.R.Domains[0] != &a {
 		t.Error("relationship was not added properly to the slice")
 	}
 
-	if a.R.AdminAdmins[0] != &d {
+	if a.R.Admins[0] != &d {
 		t.Error("relationship struct slice not set to correct value")
 	}
-	if a.R.AdminAdmins[1] != &e {
+	if a.R.Admins[1] != &e {
 		t.Error("relationship struct slice not set to correct value")
 	}
 }
 
-func testDomainToManyRemoveOpAdminAdmins(t *testing.T) {
+func testDomainToManyRemoveOpAdmins(t *testing.T) {
 	var err error
 
 	ctx := context.Background()
@@ -754,12 +831,12 @@ func testDomainToManyRemoveOpAdminAdmins(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = a.AddAdminAdmins(ctx, tx, true, foreigners...)
+	err = a.AddAdmins(ctx, tx, true, foreigners...)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	count, err := a.AdminAdmins().Count(ctx, tx)
+	count, err := a.Admins().Count(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -767,12 +844,12 @@ func testDomainToManyRemoveOpAdminAdmins(t *testing.T) {
 		t.Error("count was wrong:", count)
 	}
 
-	err = a.RemoveAdminAdmins(ctx, tx, foreigners[:2]...)
+	err = a.RemoveAdmins(ctx, tx, foreigners[:2]...)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	count, err = a.AdminAdmins().Count(ctx, tx)
+	count, err = a.Admins().Count(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -780,28 +857,279 @@ func testDomainToManyRemoveOpAdminAdmins(t *testing.T) {
 		t.Error("count was wrong:", count)
 	}
 
-	if len(b.R.DomainDomains) != 0 {
+	if len(b.R.Domains) != 0 {
 		t.Error("relationship was not removed properly from the slice")
 	}
-	if len(c.R.DomainDomains) != 0 {
+	if len(c.R.Domains) != 0 {
 		t.Error("relationship was not removed properly from the slice")
 	}
-	if d.R.DomainDomains[0] != &a {
+	if d.R.Domains[0] != &a {
 		t.Error("relationship was not added properly to the foreign struct")
 	}
-	if e.R.DomainDomains[0] != &a {
+	if e.R.Domains[0] != &a {
 		t.Error("relationship was not added properly to the foreign struct")
 	}
 
-	if len(a.R.AdminAdmins) != 2 {
+	if len(a.R.Admins) != 2 {
 		t.Error("should have preserved two relationships")
 	}
 
 	// Removal doesn't do a stable deletion for performance so we have to flip the order
-	if a.R.AdminAdmins[1] != &d {
+	if a.R.Admins[1] != &d {
 		t.Error("relationship to d should have been preserved")
 	}
-	if a.R.AdminAdmins[0] != &e {
+	if a.R.Admins[0] != &e {
+		t.Error("relationship to e should have been preserved")
+	}
+}
+
+func testDomainToManyAddOpDomainMailboxes(t *testing.T) {
+	var err error
+
+	ctx := context.Background()
+	tx := MustTx(boil.BeginTx(ctx, nil))
+	defer func() { _ = tx.Rollback() }()
+
+	var a Domain
+	var b, c, d, e Mailbox
+
+	seed := randomize.NewSeed()
+	if err = randomize.Struct(seed, &a, domainDBTypes, false, strmangle.SetComplement(domainPrimaryKeyColumns, domainColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+	foreigners := []*Mailbox{&b, &c, &d, &e}
+	for _, x := range foreigners {
+		if err = randomize.Struct(seed, x, mailboxDBTypes, false, strmangle.SetComplement(mailboxPrimaryKeyColumns, mailboxColumnsWithoutDefault)...); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := a.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+	if err = b.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+	if err = c.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	foreignersSplitByInsertion := [][]*Mailbox{
+		{&b, &c},
+		{&d, &e},
+	}
+
+	for i, x := range foreignersSplitByInsertion {
+		err = a.AddDomainMailboxes(ctx, tx, i != 0, x...)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		first := x[0]
+		second := x[1]
+
+		if !queries.Equal(a.ID, first.DomainID) {
+			t.Error("foreign key was wrong value", a.ID, first.DomainID)
+		}
+		if !queries.Equal(a.ID, second.DomainID) {
+			t.Error("foreign key was wrong value", a.ID, second.DomainID)
+		}
+
+		if first.R.Domain != &a {
+			t.Error("relationship was not added properly to the foreign slice")
+		}
+		if second.R.Domain != &a {
+			t.Error("relationship was not added properly to the foreign slice")
+		}
+
+		if a.R.DomainMailboxes[i*2] != first {
+			t.Error("relationship struct slice not set to correct value")
+		}
+		if a.R.DomainMailboxes[i*2+1] != second {
+			t.Error("relationship struct slice not set to correct value")
+		}
+
+		count, err := a.DomainMailboxes().Count(ctx, tx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if want := int64((i + 1) * 2); count != want {
+			t.Error("want", want, "got", count)
+		}
+	}
+}
+
+func testDomainToManySetOpDomainMailboxes(t *testing.T) {
+	var err error
+
+	ctx := context.Background()
+	tx := MustTx(boil.BeginTx(ctx, nil))
+	defer func() { _ = tx.Rollback() }()
+
+	var a Domain
+	var b, c, d, e Mailbox
+
+	seed := randomize.NewSeed()
+	if err = randomize.Struct(seed, &a, domainDBTypes, false, strmangle.SetComplement(domainPrimaryKeyColumns, domainColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+	foreigners := []*Mailbox{&b, &c, &d, &e}
+	for _, x := range foreigners {
+		if err = randomize.Struct(seed, x, mailboxDBTypes, false, strmangle.SetComplement(mailboxPrimaryKeyColumns, mailboxColumnsWithoutDefault)...); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err = a.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+	if err = b.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+	if err = c.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	err = a.SetDomainMailboxes(ctx, tx, false, &b, &c)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	count, err := a.DomainMailboxes().Count(ctx, tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count != 2 {
+		t.Error("count was wrong:", count)
+	}
+
+	err = a.SetDomainMailboxes(ctx, tx, true, &d, &e)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	count, err = a.DomainMailboxes().Count(ctx, tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count != 2 {
+		t.Error("count was wrong:", count)
+	}
+
+	if !queries.IsValuerNil(b.DomainID) {
+		t.Error("want b's foreign key value to be nil")
+	}
+	if !queries.IsValuerNil(c.DomainID) {
+		t.Error("want c's foreign key value to be nil")
+	}
+	if !queries.Equal(a.ID, d.DomainID) {
+		t.Error("foreign key was wrong value", a.ID, d.DomainID)
+	}
+	if !queries.Equal(a.ID, e.DomainID) {
+		t.Error("foreign key was wrong value", a.ID, e.DomainID)
+	}
+
+	if b.R.Domain != nil {
+		t.Error("relationship was not removed properly from the foreign struct")
+	}
+	if c.R.Domain != nil {
+		t.Error("relationship was not removed properly from the foreign struct")
+	}
+	if d.R.Domain != &a {
+		t.Error("relationship was not added properly to the foreign struct")
+	}
+	if e.R.Domain != &a {
+		t.Error("relationship was not added properly to the foreign struct")
+	}
+
+	if a.R.DomainMailboxes[0] != &d {
+		t.Error("relationship struct slice not set to correct value")
+	}
+	if a.R.DomainMailboxes[1] != &e {
+		t.Error("relationship struct slice not set to correct value")
+	}
+}
+
+func testDomainToManyRemoveOpDomainMailboxes(t *testing.T) {
+	var err error
+
+	ctx := context.Background()
+	tx := MustTx(boil.BeginTx(ctx, nil))
+	defer func() { _ = tx.Rollback() }()
+
+	var a Domain
+	var b, c, d, e Mailbox
+
+	seed := randomize.NewSeed()
+	if err = randomize.Struct(seed, &a, domainDBTypes, false, strmangle.SetComplement(domainPrimaryKeyColumns, domainColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+	foreigners := []*Mailbox{&b, &c, &d, &e}
+	for _, x := range foreigners {
+		if err = randomize.Struct(seed, x, mailboxDBTypes, false, strmangle.SetComplement(mailboxPrimaryKeyColumns, mailboxColumnsWithoutDefault)...); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := a.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	err = a.AddDomainMailboxes(ctx, tx, true, foreigners...)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	count, err := a.DomainMailboxes().Count(ctx, tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count != 4 {
+		t.Error("count was wrong:", count)
+	}
+
+	err = a.RemoveDomainMailboxes(ctx, tx, foreigners[:2]...)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	count, err = a.DomainMailboxes().Count(ctx, tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count != 2 {
+		t.Error("count was wrong:", count)
+	}
+
+	if !queries.IsValuerNil(b.DomainID) {
+		t.Error("want b's foreign key value to be nil")
+	}
+	if !queries.IsValuerNil(c.DomainID) {
+		t.Error("want c's foreign key value to be nil")
+	}
+
+	if b.R.Domain != nil {
+		t.Error("relationship was not removed properly from the foreign struct")
+	}
+	if c.R.Domain != nil {
+		t.Error("relationship was not removed properly from the foreign struct")
+	}
+	if d.R.Domain != &a {
+		t.Error("relationship to a should have been preserved")
+	}
+	if e.R.Domain != &a {
+		t.Error("relationship to a should have been preserved")
+	}
+
+	if len(a.R.DomainMailboxes) != 2 {
+		t.Error("should have preserved two relationships")
+	}
+
+	// Removal doesn't do a stable deletion for performance so we have to flip the order
+	if a.R.DomainMailboxes[1] != &d {
+		t.Error("relationship to d should have been preserved")
+	}
+	if a.R.DomainMailboxes[0] != &e {
 		t.Error("relationship to e should have been preserved")
 	}
 }

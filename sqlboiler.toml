@@ -15,3 +15,16 @@ add-enum-types = true
 [auto-columns]
   created = "created"
   updated = "modified"
+
+# Tell SQLBoiler that the table domain_admins is a n-m intermediate table between domain and admin
+[[aliases.tables]]
+name = "domain_admins"
+up_plural = "DomainsAdmins"
+up_singular = "DomainsAdmin"
+down_plural = "domainsAdmins"
+down_singular = "domainsAdmin"
+
+[[aliases.tables.relationships]]
+name = "FK_CD8319C693AE8C46"
+local = "Admins"
+foreign = "Domains"

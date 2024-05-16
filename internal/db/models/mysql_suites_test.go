@@ -9,4 +9,6 @@ func TestUpsert(t *testing.T) {
 	t.Run("Admins", testAdminsUpsert)
 
 	t.Run("Domains", testDomainsUpsert)
+
+	t.Run("Mailboxes", testMailboxesUpsert)
 }

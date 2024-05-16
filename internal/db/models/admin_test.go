@@ -494,7 +494,7 @@ func testAdminsInsertWhitelist(t *testing.T) {
 	}
 }
 
-func testAdminToManyDomainDomains(t *testing.T) {
+func testAdminToManyDomains(t *testing.T) {
 	var err error
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
@@ -535,7 +535,7 @@ func testAdminToManyDomainDomains(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	check, err := a.DomainDomains().All(ctx, tx)
+	check, err := a.Domains().All(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -558,18 +558,18 @@ func testAdminToManyDomainDomains(t *testing.T) {
 	}
 
 	slice := AdminSlice{&a}
-	if err = a.L.LoadDomainDomains(ctx, tx, false, (*[]*Admin)(&slice), nil); err != nil {
+	if err = a.L.LoadDomains(ctx, tx, false, (*[]*Admin)(&slice), nil); err != nil {
 		t.Fatal(err)
 	}
-	if got := len(a.R.DomainDomains); got != 2 {
+	if got := len(a.R.Domains); got != 2 {
 		t.Error("number of eager loaded records wrong, got:", got)
 	}
 
-	a.R.DomainDomains = nil
-	if err = a.L.LoadDomainDomains(ctx, tx, true, &a, nil); err != nil {
+	a.R.Domains = nil
+	if err = a.L.LoadDomains(ctx, tx, true, &a, nil); err != nil {
 		t.Fatal(err)
 	}
-	if got := len(a.R.DomainDomains); got != 2 {
+	if got := len(a.R.Domains); got != 2 {
 		t.Error("number of eager loaded records wrong, got:", got)
 	}
 
@@ -578,7 +578,7 @@ func testAdminToManyDomainDomains(t *testing.T) {
 	}
 }
 
-func testAdminToManyAddOpDomainDomains(t *testing.T) {
+func testAdminToManyAddOpDomains(t *testing.T) {
 	var err error
 
 	ctx := context.Background()
@@ -615,7 +615,7 @@ func testAdminToManyAddOpDomainDomains(t *testing.T) {
 	}
 
 	for i, x := range foreignersSplitByInsertion {
-		err = a.AddDomainDomains(ctx, tx, i != 0, x...)
+		err = a.AddDomains(ctx, tx, i != 0, x...)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -623,21 +623,21 @@ func testAdminToManyAddOpDomainDomains(t *testing.T) {
 		first := x[0]
 		second := x[1]
 
-		if first.R.AdminAdmins[0] != &a {
+		if first.R.Admins[0] != &a {
 			t.Error("relationship was not added properly to the slice")
 		}
-		if second.R.AdminAdmins[0] != &a {
+		if second.R.Admins[0] != &a {
 			t.Error("relationship was not added properly to the slice")
 		}
 
-		if a.R.DomainDomains[i*2] != first {
+		if a.R.Domains[i*2] != first {
 			t.Error("relationship struct slice not set to correct value")
 		}
-		if a.R.DomainDomains[i*2+1] != second {
+		if a.R.Domains[i*2+1] != second {
 			t.Error("relationship struct slice not set to correct value")
 		}
 
-		count, err := a.DomainDomains().Count(ctx, tx)
+		count, err := a.Domains().Count(ctx, tx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -647,7 +647,7 @@ func testAdminToManyAddOpDomainDomains(t *testing.T) {
 	}
 }
 
-func testAdminToManySetOpDomainDomains(t *testing.T) {
+func testAdminToManySetOpDomains(t *testing.T) {
 	var err error
 
 	ctx := context.Background()
@@ -678,12 +678,12 @@ func testAdminToManySetOpDomainDomains(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = a.SetDomainDomains(ctx, tx, false, &b, &c)
+	err = a.SetDomains(ctx, tx, false, &b, &c)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	count, err := a.DomainDomains().Count(ctx, tx)
+	count, err := a.Domains().Count(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -691,12 +691,12 @@ func testAdminToManySetOpDomainDomains(t *testing.T) {
 		t.Error("count was wrong:", count)
 	}
 
-	err = a.SetDomainDomains(ctx, tx, true, &d, &e)
+	err = a.SetDomains(ctx, tx, true, &d, &e)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	count, err = a.DomainDomains().Count(ctx, tx)
+	count, err = a.Domains().Count(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -708,28 +708,28 @@ func testAdminToManySetOpDomainDomains(t *testing.T) {
 	// to these when we call Set(). Leaving them here as wishful thinking
 	// and to let people know there's dragons.
 	//
-	// if len(b.R.AdminAdmins) != 0 {
+	// if len(b.R.Admins) != 0 {
 	// 	t.Error("relationship was not removed properly from the slice")
 	// }
-	// if len(c.R.AdminAdmins) != 0 {
+	// if len(c.R.Admins) != 0 {
 	// 	t.Error("relationship was not removed properly from the slice")
 	// }
-	if d.R.AdminAdmins[0] != &a {
+	if d.R.Admins[0] != &a {
 		t.Error("relationship was not added properly to the slice")
 	}
-	if e.R.AdminAdmins[0] != &a {
+	if e.R.Admins[0] != &a {
 		t.Error("relationship was not added properly to the slice")
 	}
 
-	if a.R.DomainDomains[0] != &d {
+	if a.R.Domains[0] != &d {
 		t.Error("relationship struct slice not set to correct value")
 	}
-	if a.R.DomainDomains[1] != &e {
+	if a.R.Domains[1] != &e {
 		t.Error("relationship struct slice not set to correct value")
 	}
 }
 
-func testAdminToManyRemoveOpDomainDomains(t *testing.T) {
+func testAdminToManyRemoveOpDomains(t *testing.T) {
 	var err error
 
 	ctx := context.Background()
@@ -754,12 +754,12 @@ func testAdminToManyRemoveOpDomainDomains(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = a.AddDomainDomains(ctx, tx, true, foreigners...)
+	err = a.AddDomains(ctx, tx, true, foreigners...)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	count, err := a.DomainDomains().Count(ctx, tx)
+	count, err := a.Domains().Count(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -767,12 +767,12 @@ func testAdminToManyRemoveOpDomainDomains(t *testing.T) {
 		t.Error("count was wrong:", count)
 	}
 
-	err = a.RemoveDomainDomains(ctx, tx, foreigners[:2]...)
+	err = a.RemoveDomains(ctx, tx, foreigners[:2]...)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	count, err = a.DomainDomains().Count(ctx, tx)
+	count, err = a.Domains().Count(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -780,28 +780,28 @@ func testAdminToManyRemoveOpDomainDomains(t *testing.T) {
 		t.Error("count was wrong:", count)
 	}
 
-	if len(b.R.AdminAdmins) != 0 {
+	if len(b.R.Admins) != 0 {
 		t.Error("relationship was not removed properly from the slice")
 	}
-	if len(c.R.AdminAdmins) != 0 {
+	if len(c.R.Admins) != 0 {
 		t.Error("relationship was not removed properly from the slice")
 	}
-	if d.R.AdminAdmins[0] != &a {
+	if d.R.Admins[0] != &a {
 		t.Error("relationship was not added properly to the foreign struct")
 	}
-	if e.R.AdminAdmins[0] != &a {
+	if e.R.Admins[0] != &a {
 		t.Error("relationship was not added properly to the foreign struct")
 	}
 
-	if len(a.R.DomainDomains) != 2 {
+	if len(a.R.Domains) != 2 {
 		t.Error("should have preserved two relationships")
 	}
 
 	// Removal doesn't do a stable deletion for performance so we have to flip the order
-	if a.R.DomainDomains[1] != &d {
+	if a.R.Domains[1] != &d {
 		t.Error("relationship to d should have been preserved")
 	}
-	if a.R.DomainDomains[0] != &e {
+	if a.R.Domains[0] != &e {
 		t.Error("relationship to e should have been preserved")
 	}
 }

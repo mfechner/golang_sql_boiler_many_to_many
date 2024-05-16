@@ -1,6 +1,6 @@
 package main
 
-//go:generate sqlboiler mysql
+//go:generate sqlboiler --wipe mysql
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"golang.org/x/crypto/bcrypt"
 
 	"go_sql_boiler/internal/db/models"
@@ -42,7 +43,7 @@ func main() {
 	// retrieve all domain and print them to console
 
 	fmt.Printf("Run query to domain table\n")
-	domains, err := models.Admins(Load(models.Admins.Domains)).All(context.Background(), db)
+	domains, err := models.Admins().All(context.Background(), db)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -61,6 +62,7 @@ func InsertSampleData(db *sql.DB) {
 	examplePassword := string(bytesPassword)
 
 	db.Exec("DELETE FROM domain_admins")
+	db.Exec("DELETE FROM mailbox")
 	db.Exec("DELETE FROM domain")
 	db.Exec("DELETE FROM admin")
 	fmt.Printf("******* Add Domains *******\n")
@@ -73,18 +75,59 @@ func InsertSampleData(db *sql.DB) {
 
 	// Create admins
 	fmt.Printf("******* Add Admins *******\n")
-	adminFoo := &models.Admin{Username: "bar@foo.net", Password: examplePassword, Super: true}
+	adminFoo := &models.Admin{Username: null.StringFrom("bar@foo.net"), Password: examplePassword, Super: true}
 	err = adminFoo.Insert(context.Background(), db, boil.Infer())
-	adminTest := &models.Admin{Username: "info@test.de", Password: examplePassword, Super: false}
+	adminTest := &models.Admin{Username: null.StringFrom("info@test.de"), Password: examplePassword, Super: false}
 	err = adminTest.Insert(context.Background(), db, boil.Infer())
 
 	// Admin Domain Mapping
 	fmt.Printf("******* Add Admin-Domain-Mappings *******\n")
 	// TODO: models.DomainsAdmins seems to be missing
+	err = adminFoo.AddDomains(context.Background(), db, false, domainFoo)
+	dieIf(err)
 
-	err = domainTest.AddAdminAdmins(context.Background(), db, true, adminTest)
+	// Add a mailbox and link it to a domain
+	fmt.Printf("******* Add Mailbox *******\n")
+	fooMailbox := &models.Mailbox{
+		Username:          "test@foo.net",
+		Password:          examplePassword,
+		Name:              null.StringFrom("Test User"),
+		AltEmail:          null.StringFrom("test@test.com"),
+		Quota:             0,
+		LocalPart:         "test",
+		Active:            false,
+		AccessRestriction: "",
+		Homedir:           null.StringFrom("/home/test"),
+		Maildir:           null.String{},
+		UID:               null.Int64From(5000),
+		Gid:               null.Int64From(5000),
+		HomedirSize:       null.Int64From(0),
+		MaildirSize:       null.Int64From(0),
+		SizeAt:            null.Time{},
+		DeletePending:     null.BoolFrom(false),
+		DomainID:          null.Int64From(domainFoo.ID),
+	}
+	err = fooMailbox.Insert(context.Background(), db, boil.Infer())
+	dieIf(err)
 
 	fmt.Printf("***** Seeding database with sample data, done. *****\n\n")
+
+	// Now get a mailboxes and join them with the domain table
+	var mods []qm.QueryMod
+	mods = append(mods, models.MailboxWhere.ID.EQ(fooMailbox.ID))
+	mods = append(mods, qm.Load(models.TableNames.Domain))
+	log.Println("Get count of mailbox table")
+	count, err := models.Mailboxes(mods...).Count(context.Background(), db)
+	dieIf(err)
+
+	mods = append(mods, qm.OrderBy("id"))
+	log.Println("Get all mailboxes")
+	mailboxes, err := models.Mailboxes(mods...).All(context.Background(), db)
+	dieIf(err)
+	log.Printf("Found %d mailboxes\n", count)
+	for _, mailbox := range mailboxes {
+		log.Printf("Found mailbox: %+v with domain %+v\n", mailbox, mailbox.R.Domain)
+	}
 }
 
 func dieIf(err error) {

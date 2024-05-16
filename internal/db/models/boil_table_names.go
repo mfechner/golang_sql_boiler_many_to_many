@@ -7,8 +7,10 @@ var TableNames = struct {
 	Admin        string
 	Domain       string
 	DomainAdmins string
+	Mailbox      string
 }{
 	Admin:        "admin",
 	Domain:       "domain",
 	DomainAdmins: "domain_admins",
+	Mailbox:      "mailbox",
 }

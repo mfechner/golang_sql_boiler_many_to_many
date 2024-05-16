@@ -240,14 +240,14 @@ var AdminWhere = struct {
 
 // AdminRels is where relationship names are stored.
 var AdminRels = struct {
-	DomainDomains string
+	Domains string
 }{
-	DomainDomains: "DomainDomains",
+	Domains: "Domains",
 }
 
 // adminR is where relationships are stored.
 type adminR struct {
-	DomainDomains DomainSlice `boil:"DomainDomains" json:"DomainDomains" toml:"DomainDomains" yaml:"DomainDomains"`
+	Domains DomainSlice `boil:"Domains" json:"Domains" toml:"Domains" yaml:"Domains"`
 }
 
 // NewStruct creates a new relationship struct
@@ -255,11 +255,11 @@ func (*adminR) NewStruct() *adminR {
 	return &adminR{}
 }
 
-func (r *adminR) GetDomainDomains() DomainSlice {
+func (r *adminR) GetDomains() DomainSlice {
 	if r == nil {
 		return nil
 	}
-	return r.DomainDomains
+	return r.Domains
 }
 
 // adminL is where Load methods for each relationship are stored.
@@ -578,8 +578,8 @@ func (q adminQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bool
 	return count > 0, nil
 }
 
-// DomainDomains retrieves all the domain's Domains with an executor via id column.
-func (o *Admin) DomainDomains(mods ...qm.QueryMod) domainQuery {
+// Domains retrieves all the domain's Domains with an executor.
+func (o *Admin) Domains(mods ...qm.QueryMod) domainQuery {
 	var queryMods []qm.QueryMod
 	if len(mods) != 0 {
 		queryMods = append(queryMods, mods...)
@@ -593,9 +593,9 @@ func (o *Admin) DomainDomains(mods ...qm.QueryMod) domainQuery {
 	return Domains(queryMods...)
 }
 
-// LoadDomainDomains allows an eager lookup of values, cached into the
+// LoadDomains allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-M or N-M relationship.
-func (adminL) LoadDomainDomains(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAdmin interface{}, mods queries.Applicator) error {
+func (adminL) LoadDomains(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAdmin interface{}, mods queries.Applicator) error {
 	var slice []*Admin
 	var object *Admin
 
@@ -696,12 +696,12 @@ func (adminL) LoadDomainDomains(ctx context.Context, e boil.ContextExecutor, sin
 		}
 	}
 	if singular {
-		object.R.DomainDomains = resultSlice
+		object.R.Domains = resultSlice
 		for _, foreign := range resultSlice {
 			if foreign.R == nil {
 				foreign.R = &domainR{}
 			}
-			foreign.R.AdminAdmins = append(foreign.R.AdminAdmins, object)
+			foreign.R.Admins = append(foreign.R.Admins, object)
 		}
 		return nil
 	}
@@ -710,11 +710,11 @@ func (adminL) LoadDomainDomains(ctx context.Context, e boil.ContextExecutor, sin
 		localJoinCol := localJoinCols[i]
 		for _, local := range slice {
 			if local.ID == localJoinCol {
-				local.R.DomainDomains = append(local.R.DomainDomains, foreign)
+				local.R.Domains = append(local.R.Domains, foreign)
 				if foreign.R == nil {
 					foreign.R = &domainR{}
 				}
-				foreign.R.AdminAdmins = append(foreign.R.AdminAdmins, local)
+				foreign.R.Admins = append(foreign.R.Admins, local)
 				break
 			}
 		}
@@ -723,11 +723,11 @@ func (adminL) LoadDomainDomains(ctx context.Context, e boil.ContextExecutor, sin
 	return nil
 }
 
-// AddDomainDomains adds the given related objects to the existing relationships
+// AddDomains adds the given related objects to the existing relationships
 // of the admin, optionally inserting them as new records.
-// Appends related to o.R.DomainDomains.
-// Sets related.R.AdminAdmins appropriately.
-func (o *Admin) AddDomainDomains(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Domain) error {
+// Appends related to o.R.Domains.
+// Sets related.R.Admins appropriately.
+func (o *Admin) AddDomains(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Domain) error {
 	var err error
 	for _, rel := range related {
 		if insert {
@@ -753,31 +753,31 @@ func (o *Admin) AddDomainDomains(ctx context.Context, exec boil.ContextExecutor,
 	}
 	if o.R == nil {
 		o.R = &adminR{
-			DomainDomains: related,
+			Domains: related,
 		}
 	} else {
-		o.R.DomainDomains = append(o.R.DomainDomains, related...)
+		o.R.Domains = append(o.R.Domains, related...)
 	}
 
 	for _, rel := range related {
 		if rel.R == nil {
 			rel.R = &domainR{
-				AdminAdmins: AdminSlice{o},
+				Admins: AdminSlice{o},
 			}
 		} else {
-			rel.R.AdminAdmins = append(rel.R.AdminAdmins, o)
+			rel.R.Admins = append(rel.R.Admins, o)
 		}
 	}
 	return nil
 }
 
-// SetDomainDomains removes all previously related items of the
+// SetDomains removes all previously related items of the
 // admin replacing them completely with the passed
 // in related items, optionally inserting them as new records.
-// Sets o.R.AdminAdmins's DomainDomains accordingly.
-// Replaces o.R.DomainDomains with related.
-// Sets related.R.AdminAdmins's DomainDomains accordingly.
-func (o *Admin) SetDomainDomains(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Domain) error {
+// Sets o.R.Admins's Domains accordingly.
+// Replaces o.R.Domains with related.
+// Sets related.R.Admins's Domains accordingly.
+func (o *Admin) SetDomains(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Domain) error {
 	query := "delete from `domain_admins` where `Admin_id` = ?"
 	values := []interface{}{o.ID}
 	if boil.IsDebug(ctx) {
@@ -790,18 +790,18 @@ func (o *Admin) SetDomainDomains(ctx context.Context, exec boil.ContextExecutor,
 		return errors.Wrap(err, "failed to remove relationships before set")
 	}
 
-	removeDomainDomainsFromAdminAdminsSlice(o, related)
+	removeDomainsFromAdminsSlice(o, related)
 	if o.R != nil {
-		o.R.DomainDomains = nil
+		o.R.Domains = nil
 	}
 
-	return o.AddDomainDomains(ctx, exec, insert, related...)
+	return o.AddDomains(ctx, exec, insert, related...)
 }
 
-// RemoveDomainDomains relationships from objects passed in.
-// Removes related items from R.DomainDomains (uses pointer comparison, removal does not keep order)
-// Sets related.R.AdminAdmins.
-func (o *Admin) RemoveDomainDomains(ctx context.Context, exec boil.ContextExecutor, related ...*Domain) error {
+// RemoveDomains relationships from objects passed in.
+// Removes related items from R.Domains (uses pointer comparison, removal does not keep order)
+// Sets related.R.Admins.
+func (o *Admin) RemoveDomains(ctx context.Context, exec boil.ContextExecutor, related ...*Domain) error {
 	if len(related) == 0 {
 		return nil
 	}
@@ -825,22 +825,22 @@ func (o *Admin) RemoveDomainDomains(ctx context.Context, exec boil.ContextExecut
 	if err != nil {
 		return errors.Wrap(err, "failed to remove relationships before set")
 	}
-	removeDomainDomainsFromAdminAdminsSlice(o, related)
+	removeDomainsFromAdminsSlice(o, related)
 	if o.R == nil {
 		return nil
 	}
 
 	for _, rel := range related {
-		for i, ri := range o.R.DomainDomains {
+		for i, ri := range o.R.Domains {
 			if rel != ri {
 				continue
 			}
 
-			ln := len(o.R.DomainDomains)
+			ln := len(o.R.Domains)
 			if ln > 1 && i < ln-1 {
-				o.R.DomainDomains[i] = o.R.DomainDomains[ln-1]
+				o.R.Domains[i] = o.R.Domains[ln-1]
 			}
-			o.R.DomainDomains = o.R.DomainDomains[:ln-1]
+			o.R.Domains = o.R.Domains[:ln-1]
 			break
 		}
 	}
@@ -848,21 +848,21 @@ func (o *Admin) RemoveDomainDomains(ctx context.Context, exec boil.ContextExecut
 	return nil
 }
 
-func removeDomainDomainsFromAdminAdminsSlice(o *Admin, related []*Domain) {
+func removeDomainsFromAdminsSlice(o *Admin, related []*Domain) {
 	for _, rel := range related {
 		if rel.R == nil {
 			continue
 		}
-		for i, ri := range rel.R.AdminAdmins {
+		for i, ri := range rel.R.Admins {
 			if o.ID != ri.ID {
 				continue
 			}
 
-			ln := len(rel.R.AdminAdmins)
+			ln := len(rel.R.Admins)
 			if ln > 1 && i < ln-1 {
-				rel.R.AdminAdmins[i] = rel.R.AdminAdmins[ln-1]
+				rel.R.Admins[i] = rel.R.Admins[ln-1]
 			}
-			rel.R.AdminAdmins = rel.R.AdminAdmins[:ln-1]
+			rel.R.Admins = rel.R.Admins[:ln-1]
 			break
 		}
 	}
